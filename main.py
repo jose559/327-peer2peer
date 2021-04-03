@@ -23,7 +23,6 @@ def main():
     
     # Add Banner 
     print("-" * 50)
-    print("Scanning Target: " + target)
     print("Scanning started at:" + str(datetime.now()))
     print("-" * 50)
 
@@ -41,11 +40,11 @@ def checkPort(address):
         socket.setdefaulttimeout(1)
         
         # returns an error indicator
-        result = s.connect_ex((target, 9999))
+        result = s.connect_ex((target, 134))
         if result == 0:
-            print("{}: Port 9999 is open".format(target))
+            print("{}: Port 134 is open".format(target))
         else:
-            print("{}: Port 9999 is closed".format(target))
+            print("{}: Port 134 is closed".format(target))
         s.close()
         return
             
