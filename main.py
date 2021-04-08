@@ -21,6 +21,11 @@ def main():
 
     print(addresses)
     
+    
+    serverThread = threading.Thread(target=acceptConnections, args=())
+    serverThread.start()
+
+
     # Add Banner 
     print("-" * 50)
     print("Scanning started at:" + str(datetime.now()))
@@ -35,12 +40,11 @@ def main():
 def checkPort(address):
     target = address
     try:
-        # will scan ports between 1 to 65,535
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket.setdefaulttimeout(1)
         
         # returns an error indicator
-        result = s.connect_ex((target, 134))
+        result = s.connect_ex((target, 9999))
         if result == 0:
             print("{}: Port 134 is open".format(target))
         else:
@@ -57,5 +61,21 @@ def checkPort(address):
     except socket.error:
             print("\ Server not responding !!!!")
             sys.exit()
+
+def acceptConnections():
+    HOST = ''
+    PORT = 9999
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        addr = s.accept()
+        with conn:
+            print('Connected by', addr)
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                conn.sendall(data)
 
 main()
