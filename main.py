@@ -9,13 +9,14 @@ def main():
     with os.popen('arp -a') as f:
         data = f.read()
 
+    print(data)
     data = data.split('\n')
     print()
     addresses = []
     for i in range(3, len(data)):
         line = data[i].split(" ")
         for x in line:
-            if x:
+            if x and x[0].isdigit():
                 addresses.append(x)
                 break
 
@@ -66,16 +67,19 @@ def acceptConnections():
     HOST = ''
     PORT = 9999
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        addr = s.accept()
-        with conn:
-            print('Connected by', addr)
-            while True:
-                data = conn.recv(1024)
-                if not data:
-                    break
-                conn.sendall(data)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen()
+            addr = s.accept()
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    data = conn.recv(1024)
+                    if not data:
+                        break
+                    conn.sendall(data)
+    except socket.error as socketerror:
+        print("Error: ", socketerror)
 
 main()
