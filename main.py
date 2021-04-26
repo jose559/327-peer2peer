@@ -4,6 +4,8 @@ import os
 from datetime import datetime
 import threading
 
+PORT = 5102
+
 def main():
     # Scans the arp table and finds all connected addresses
     with os.popen('arp -a') as f:
@@ -39,17 +41,18 @@ def main():
 
 
 def checkPort(address):
+    global PORT
     target = address
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket.setdefaulttimeout(1)
         
         # returns an error indicator
-        result = s.connect_ex((target, 9999))
+        result = s.connect_ex((target, PORT))
         if result == 0:
-            print("{}: Port 134 is open".format(target))
+            print("{}: Port {} is open".format(target, PORT))
         else:
-            print("{}: Port 134 is closed".format(target))
+            print("{}: Port {} is closed".format(target, PORT))
         s.close()
         return
             
@@ -65,20 +68,19 @@ def checkPort(address):
 
 def acceptConnections():
     HOST = ''
-    PORT = 9999
+    global PORT
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((HOST, PORT))
+            s.bind((socket.gethostbyname(socket.gethostname()), PORT))
             s.listen()
-            addr = s.accept()
+            conn, addr = s.accept()
             with conn:
                 print('Connected by', addr)
                 while True:
                     data = conn.recv(1024)
                     if not data:
                         break
-                    conn.sendall(data)
     except socket.error as socketerror:
         print("Error: ", socketerror)
 
