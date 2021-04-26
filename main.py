@@ -35,9 +35,10 @@ def main():
     print("-" * 50)
 
     for i in range(len(addresses)):
-        thread = threading.Thread(target=checkPort, args=(addresses[i],))
-        thread.start()
-   
+        if (addresses[i] != (socket.gethostbyname(socket.gethostname()))):
+            thread = threading.Thread(target=checkPort, args=(addresses[i],))
+            thread.start()
+    
 
 
 def checkPort(address):
