@@ -5,6 +5,7 @@ from datetime import datetime
 import threading
 
 PORT = 5102
+HOST = socket.gethostbyname(socket.gethostname())
 addresses = []
 threads = []
 connections = []
@@ -15,12 +16,12 @@ class ClientThread(Thread):
         Thread.__init__(self) 
         self.ip = ip 
         self.port = port 
-        print "[+] New server socket thread started for " + ip + ":" + str(port) 
+        print("[+] New server socket thread started for " + ip + ":" + str(port))
  
     def run(self): 
         while True : 
             data = conn.recv(2048) 
-            print "Server received data:", data
+            print("Server received data:", data)
             MESSAGE = raw_input("Multithreaded Python server : Enter Response from Server/Enter exit:")
             if MESSAGE == 'exit':
                 break
@@ -28,7 +29,7 @@ class ClientThread(Thread):
 
 def main():
     # Scans the arp table and finds all connected addresses
-    global addresses
+    global addresses, HOST
     with os.popen('arp -a') as f:
         data = f.read()
 
@@ -55,7 +56,7 @@ def main():
     print("-" * 50)
 
     for i in range(len(addresses)):
-        if (addresses[i] != (socket.gethostbyname(socket.gethostname()))):
+        if (addresses[i] != HOST):
             thread = threading.Thread(target=checkPort, args=(addresses[i],))
             thread.start()
     
@@ -89,8 +90,7 @@ def checkPort(address):
             sys.exit()
 
 def acceptConnections():
-    HOST = socket.gethostbyname(socket.gethostname())
-    global PORT, threads, connections, addresses
+    global HOST, PORT, threads, connections, addresses
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
