@@ -5,16 +5,36 @@ from datetime import datetime
 import threading
 
 PORT = 5102
+addresses = []
+threads = []
+connections = []
+
+class ClientThread(Thread): 
+ 
+    def __init__(self,ip,port): 
+        Thread.__init__(self) 
+        self.ip = ip 
+        self.port = port 
+        print "[+] New server socket thread started for " + ip + ":" + str(port) 
+ 
+    def run(self): 
+        while True : 
+            data = conn.recv(2048) 
+            print "Server received data:", data
+            MESSAGE = raw_input("Multithreaded Python server : Enter Response from Server/Enter exit:")
+            if MESSAGE == 'exit':
+                break
+            conn.send(MESSAGE)  # echo 
 
 def main():
     # Scans the arp table and finds all connected addresses
+    global addresses
     with os.popen('arp -a') as f:
         data = f.read()
 
     print(data)
     data = data.split('\n')
     print()
-    addresses = []
     for i in range(3, len(data)):
         line = data[i].split(" ")
         for x in line:
@@ -52,9 +72,10 @@ def checkPort(address):
         result = s.connect_ex((target, PORT))
         if result == 0:
             print("{}: Port {} is open".format(target, PORT))
+            s.sendall(b'Hello world')
         else:
             print("{}: Port {} is closed".format(target, PORT))
-        s.close()
+            s.close()
         return
             
     except KeyboardInterrupt:
@@ -68,20 +89,20 @@ def checkPort(address):
             sys.exit()
 
 def acceptConnections():
-    HOST = ''
-    global PORT
+    HOST = socket.gethostbyname(socket.gethostname())
+    global PORT, threads, connections, addresses
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((socket.gethostbyname(socket.gethostname()), PORT))
-            s.listen()
-            conn, addr = s.accept()
-            with conn:
-                print('Connected by', addr)
-                while True:
-                    data = conn.recv(1024)
-                    if not data:
-                        break
+            s.bind((HOST, PORT))
+            while True:
+                s.listen(10)
+                conn, (ip, port) = s.accept()
+                newThread = ClientThread(ip, port)
+                newThread.start()
+                connections.append(conn)
+                threads.append(newThread)
+                addresses.append(addr)
     except socket.error as socketerror:
         print("Error: ", socketerror)
 
