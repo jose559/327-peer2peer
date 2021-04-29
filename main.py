@@ -10,26 +10,12 @@ addresses = []
 threads = []
 connections = []
 
-class ClientThread(Thread): 
- 
-    def __init__(self,ip,port): 
-        Thread.__init__(self) 
-        self.ip = ip 
-        self.port = port 
-        print("[+] New server socket thread started for " + ip + ":" + str(port))
- 
-    def run(self): 
-        while True : 
-            data = conn.recv(2048) 
-            print("Server received data:", data)
-            MESSAGE = raw_input("Multithreaded Python server : Enter Response from Server/Enter exit:")
-            if MESSAGE == 'exit':
-                break
-            conn.send(MESSAGE)  # echo 
+
 
 def main():
     # Scans the arp table and finds all connected addresses
     global addresses, HOST
+    print(socket.gethostbyname(socket.gethostname()))
     with os.popen('arp -a') as f:
         data = f.read()
 
@@ -75,7 +61,6 @@ def checkPort(address):
             print("{}: Port {} is open".format(target, PORT))
             s.sendall(b'Hello world')
         else:
-            print("{}: Port {} is closed".format(target, PORT))
             s.close()
         return
             
@@ -98,12 +83,24 @@ def acceptConnections():
             while True:
                 s.listen(10)
                 conn, (ip, port) = s.accept()
-                newThread = ClientThread(ip, port)
+                newThread = threading.Thread(target=checkForData, args=(conn, ip, port,))
                 newThread.start()
                 connections.append(conn)
                 threads.append(newThread)
-                addresses.append(addr)
+                addresses.append(ip)
     except socket.error as socketerror:
         print("Error: ", socketerror)
+
+def checkForData(conn, ip, port):
+    print("[+] New server socket thread started for " + ip + ":" + str(port))
+ 
+    while True : 
+        data = conn.recv(2048) 
+        print("Server received data:", data)
+        MESSAGE = b"Multithreaded Python server : Enter Response from Server/Enter exit:"
+        if MESSAGE == 'exit':
+            break
+        conn.send(MESSAGE)  # echo 
+
 
 main()
