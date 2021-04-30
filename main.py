@@ -6,10 +6,9 @@ import threading
 import pickle
 
 PORT = 5102
+#HOST = socket.gethostbyname(socket.gethostname())
 HOST = socket.gethostbyname(socket.gethostname())
 addresses = []
-threads = []
-connections = []
 
 
 
@@ -48,6 +47,9 @@ def main():
         if (addresses[i] != HOST):
             thread = threading.Thread(target=checkPort, args=(addresses[i],))
             thread.start()
+
+    clientThread = threading.Thread(target=checkForUpdates())
+    clientThread.start()
     
 
 
@@ -62,8 +64,17 @@ def checkPort(address):
         result = s.connect_ex((target, PORT))
         if result == 0:
             print("{}: Port {} is open".format(target, PORT))
-            newThread = threading.Thread(target=checkForData, args=(s,))
-            newThread.start()
+            while True : 
+                try:
+                    data = pickle.loads(s.recv(2048))
+                    print("data: " + data["msg"])
+                    print("data: " + data["ips"])
+                    print("data: " + data["fileData"])
+                    print("data: " + data["id"])
+                    print("data: " + str(data["port"]))
+                except EOFError:
+                    print("Local Data has been received from address: " + target)
+                    break
         else:
             s.close()
         return
@@ -91,9 +102,6 @@ def acceptConnections():
                     if (addresses.index(ip)):
                         newThread = threading.Thread(target=checkForData, args=(conn,))
                         newThread.start()
-                        connections.append(conn)
-                        threads.append(newThread)
-                        addresses.append(ip)
                 except ValueError:
                     print("Sending file data to: " + ip)
                     print("Adding to network")
@@ -107,6 +115,19 @@ def acceptConnections():
                     conn.send(pickle.dumps(sendData))
                     addresses.append(ip)
                     conn.close()
+
+                    for peer in addresses:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        socket.setdefaulttimeout(1)
+
+                        s.connect_ex((peer, PORT))
+                        sendData = {
+                            "msg": "newNode",
+                            "attachment": ip,
+                            "id": HOST
+                        }
+                        s.send(sendData)
+                        s.close()
                     continue
     except socket.error as socketerror:
         print("Error: ", socketerror)
@@ -115,14 +136,22 @@ def checkForData(conn):
     while True : 
         try:
             data = pickle.loads(conn.recv(2048))
-            print("data: " + data["msg"])
-            print("data: " + data["ips"])
-            print("data: " + data["fileData"])
-            print("data: " + data["id"])
-            print("data: " + str(data["port"]))
+            receivedMsg = data["msg"]
+            receivedData = data["attachment"]
+            messageSender = data["id"]
+
+            if (receivedMsg == "update"):
+                break
+            elif (receivedMsg == "newNode"):
+                break
+            elif (receivedMsg == "leaving"):
+                break
         except EOFError:
             print("Exiting!")
             break
+
+def checkForUpdates():
+    return
 
 
 main()
