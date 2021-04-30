@@ -64,7 +64,6 @@ def checkPort(address):
             print("{}: Port {} is open".format(target, PORT))
             newThread = threading.Thread(target=checkForData, args=(s,))
             newThread.start()
-            print("data: " + str(data))
         else:
             s.close()
         return
