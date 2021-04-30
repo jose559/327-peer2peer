@@ -3,6 +3,7 @@ import socket
 import os
 from datetime import datetime
 import threading
+import pickle
 
 PORT = 5102
 HOST = socket.gethostbyname(socket.gethostname())
@@ -14,10 +15,12 @@ connections = []
 
 def main():
     # Scans the arp table and finds all connected addresses
-    global addresses, HOST
+    global HOST
     print(socket.gethostbyname(socket.gethostname()))
     with os.popen('arp -a') as f:
         data = f.read()
+
+    addresses = []
 
     print(data)
     data = data.split('\n')
@@ -59,7 +62,9 @@ def checkPort(address):
         result = s.connect_ex((target, PORT))
         if result == 0:
             print("{}: Port {} is open".format(target, PORT))
-            s.sendall(b'Hello world')
+            newThread = threading.Thread(target=checkForData, args=(s,))
+            newThread.start()
+            print("data: " + str(data))
         else:
             s.close()
         return
@@ -83,24 +88,42 @@ def acceptConnections():
             while True:
                 s.listen(10)
                 conn, (ip, port) = s.accept()
-                newThread = threading.Thread(target=checkForData, args=(conn, ip, port,))
-                newThread.start()
-                connections.append(conn)
-                threads.append(newThread)
-                addresses.append(ip)
+                try:
+                    if (addresses.index(ip)):
+                        newThread = threading.Thread(target=checkForData, args=(conn,))
+                        newThread.start()
+                        connections.append(conn)
+                        threads.append(newThread)
+                        addresses.append(ip)
+                except ValueError:
+                    print("Sending file data to: " + ip)
+                    print("Adding to network")
+                    sendData = {
+                        "msg": "test dictionary",
+                        "ips": "list of ips",
+                        "fileData": "file data for the client",
+                        "id": HOST,
+                        "port": PORT
+                    }
+                    conn.send(pickle.dumps(sendData))
+                    addresses.append(ip)
+                    conn.close()
+                    continue
     except socket.error as socketerror:
         print("Error: ", socketerror)
 
-def checkForData(conn, ip, port):
-    print("[+] New server socket thread started for " + ip + ":" + str(port))
- 
+def checkForData(conn):
     while True : 
-        data = conn.recv(2048) 
-        print("Server received data:", data)
-        MESSAGE = b"Multithreaded Python server : Enter Response from Server/Enter exit:"
-        if MESSAGE == 'exit':
+        try:
+            data = pickle.loads(conn.recv(2048))
+            print("data: " + data["msg"])
+            print("data: " + data["ips"])
+            print("data: " + data["fileData"])
+            print("data: " + data["id"])
+            print("data: " + str(data["port"]))
+        except EOFError:
+            print("Exiting!")
             break
-        conn.send(MESSAGE)  # echo 
 
 
 main()
