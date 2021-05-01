@@ -69,7 +69,7 @@ def main():
 
 
 def checkPort(address):
-    global PORT, path
+    global PORT, path, addresses
     target = address
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,11 +83,12 @@ def checkPort(address):
                 try:
                     data = pickle.loads(s.recv(2048))
                     print("data: " + data["msg"])
-                    print("data: " + data["ips"])
+                    print(data["ips"])
                     print(data["fileData"])
                     print("data: " + data["id"])
                     print("data: " + str(data["port"]))
                     receiveNewFiles(path, data["fileData"])
+                    addresses = data["ips"].append(data["id"])
                 except EOFError:
                     print("Local Data has been received from address: " + target)
                     break    
@@ -122,13 +123,14 @@ def acceptConnections():
                     print("Sending file data to: " + ip)
                     print("Adding to network")
                     sendData = {
-                        "msg": "test dictionary",
-                        "ips": "list of ips",
+                        "msg": "Initial data",
+                        "ips": addresses,
                         "fileData": getCurrentFiles(path),
                         "id": HOST,
                         "port": PORT
                     }
                     conn.send(pickle.dumps(sendData))
+                    conn.close()
 
                     for peer in addresses:
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -201,7 +203,7 @@ def recursiveReceiveNewFiles(path, newFileList):
     for dirName in newFileList:
         if (isinstance(dirName, list)):
             newDirName = dirName.pop(0)
-            if not (os.path.exists(path)):
+            if not (os.path.exists(path + '\\' + newDirName)):
                 os.mkdir(path + '\\' + newDirName)
             recursiveReceiveNewFiles(path + '\\' + newDirName, dirName)
         else:
