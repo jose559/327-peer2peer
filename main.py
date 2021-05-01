@@ -8,13 +8,14 @@ import pickle
 PORT = 5102
 #HOST = socket.gethostbyname(socket.gethostname())
 HOST = socket.gethostbyname(socket.gethostname())
+path = os.getcwd() + '\\' + HOST
 addresses = []
 
 
 
 def main():
     # Scans the arp table and finds all connected addresses
-    global HOST
+    global HOST, path
     print(socket.gethostbyname(socket.gethostname()))
     with os.popen('arp -a') as f:
         data = f.read()
@@ -32,11 +33,26 @@ def main():
                 break
 
     print(addresses)
+    testList = ["Hello", 123, [1, "Hello"], 'a', 123123]
+    print(testList)
     
     
     serverThread = threading.Thread(target=acceptConnections, args=())
     serverThread.start()
 
+    print(path)
+    if not (os.path.exists(path)):
+        os.makedirs(path)
+        print("Making directory at " + path)
+
+    currentFiles = os.listdir(path)
+    print(currentFiles)
+    for dirName in currentFiles:
+        if (os.path.isdir(path + '\\' + dirName)):
+            print('Is Folder')
+        else:
+            print("Isn't folder")
+    print(getCurrentFiles(path))
 
     # Add Banner 
     print("-" * 50)
@@ -48,13 +64,14 @@ def main():
             thread = threading.Thread(target=checkPort, args=(addresses[i],))
             thread.start()
 
+
     clientThread = threading.Thread(target=checkForUpdates())
     clientThread.start()
     
 
 
 def checkPort(address):
-    global PORT
+    global PORT, path
     target = address
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,9 +89,12 @@ def checkPort(address):
                     print("data: " + data["fileData"])
                     print("data: " + data["id"])
                     print("data: " + str(data["port"]))
+                    receiveNewFiles(path)
                 except EOFError:
                     print("Local Data has been received from address: " + target)
                     break
+
+            
         else:
             s.close()
         return
@@ -90,7 +110,7 @@ def checkPort(address):
             sys.exit()
 
 def acceptConnections():
-    global HOST, PORT, threads, connections, addresses
+    global HOST, PORT, addresses, path
 
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -108,7 +128,7 @@ def acceptConnections():
                     sendData = {
                         "msg": "test dictionary",
                         "ips": "list of ips",
-                        "fileData": "file data for the client",
+                        "fileData": getCurrentFiles(path),
                         "id": HOST,
                         "port": PORT
                     }
@@ -153,5 +173,45 @@ def checkForData(conn):
 def checkForUpdates():
     return
 
+def getCurrentFiles(path):
+    files = []
+    recursiveGetCurrentFiles(path, files)
+    return files
+
+def recursiveGetCurrentFiles(path, fileList):
+    currentFiles = os.listdir(path)
+    for dirName in currentFiles:
+        if (os.path.isdir(path + '\\' + dirName)):
+            newFileDir = [dirName]
+            recursiveGetCurrentFiles(path + '\\' + dirName, newFileDir)
+            fileList.append(newFileDir)
+        else:
+            f = open(path + '\\' + dirName, 'r')
+            name = dirName + '\n'
+            content = name + f.read()
+            fileList.append(content)
+            f.close()
+    return
+
+def receiveNewFiles(path):
+    files = []
+    recursiveReceiveNewFiles(path, files)
+    return
+
+def recursiveReceiveNewFiles(path, newFileList):
+    for dirName in newFileList:
+        if (isinstance(dirName, list)):
+            if not (os.path.exists(path)):
+                os.mkdir(path + '\\' + newDirName)
+            newDirName = dirName.pop(0)
+            receiveNewFiles(path + '\\', dirName)
+        else:
+            fileName = dirName.split('\n', 1)[0]
+            content = dirName.split('\n', 1)[1]
+            newFile = os.path.join(path, fileName)
+            f = open(newFile, 'w')
+            f.write(content)
+            f.close()
+    return
 
 main()
