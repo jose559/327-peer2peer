@@ -33,8 +33,6 @@ def main():
                 break
 
     print(addresses)
-    testList = ["Hello", 123, [1, "Hello"], 'a', 123123]
-    print(testList)
     
     
     serverThread = threading.Thread(target=acceptConnections, args=())
@@ -86,15 +84,13 @@ def checkPort(address):
                     data = pickle.loads(s.recv(2048))
                     print("data: " + data["msg"])
                     print("data: " + data["ips"])
-                    print("data: " + data["fileData"])
+                    print(data["fileData"])
                     print("data: " + data["id"])
                     print("data: " + str(data["port"]))
-                    receiveNewFiles(path)
+                    receiveNewFiles(path, data["fileData"])
                 except EOFError:
                     print("Local Data has been received from address: " + target)
-                    break
-
-            
+                    break    
         else:
             s.close()
         return
@@ -133,8 +129,6 @@ def acceptConnections():
                         "port": PORT
                     }
                     conn.send(pickle.dumps(sendData))
-                    addresses.append(ip)
-                    conn.close()
 
                     for peer in addresses:
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -146,8 +140,9 @@ def acceptConnections():
                             "attachment": ip,
                             "id": HOST
                         }
-                        s.send(sendData)
+                        s.send(pickle.dumps(sendData))
                         s.close()
+                    addresses.append(ip)
                     continue
     except socket.error as socketerror:
         print("Error: ", socketerror)
@@ -174,8 +169,11 @@ def checkForUpdates():
     return
 
 def getCurrentFiles(path):
+    print("Finding current files...")
     files = []
     recursiveGetCurrentFiles(path, files)
+    print("Files found:")
+    print(files)
     return files
 
 def recursiveGetCurrentFiles(path, fileList):
@@ -193,18 +191,19 @@ def recursiveGetCurrentFiles(path, fileList):
             f.close()
     return
 
-def receiveNewFiles(path):
-    files = []
-    recursiveReceiveNewFiles(path, files)
+def receiveNewFiles(path, newFileList):
+    print("Receiving new files...")
+    recursiveReceiveNewFiles(path, newFileList)
+    print("Files received.")
     return
 
 def recursiveReceiveNewFiles(path, newFileList):
     for dirName in newFileList:
         if (isinstance(dirName, list)):
+            newDirName = dirName.pop(0)
             if not (os.path.exists(path)):
                 os.mkdir(path + '\\' + newDirName)
-            newDirName = dirName.pop(0)
-            receiveNewFiles(path + '\\', dirName)
+            recursiveReceiveNewFiles(path + '\\' + newDirName, dirName)
         else:
             fileName = dirName.split('\n', 1)[0]
             content = dirName.split('\n', 1)[1]
