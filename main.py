@@ -16,7 +16,7 @@ currentFiles = []
 
 def main():
     # Scans the arp table and finds all connected addresses
-    global HOST, path
+    global HOST, path, currentFiles
     print(socket.gethostbyname(socket.gethostname()))
     with os.popen('arp -a') as f:
         data = f.read()
@@ -51,8 +51,8 @@ def main():
             print('Is Folder')
         else:
             print("Isn't folder")
-    print(getCurrentFiles(path))
-
+    currentFiles = getCurrentFiles(path)
+    print(currentFiles)
     # Add Banner 
     print("-" * 50)
     print("Scanning started at:" + str(datetime.now()))
@@ -152,6 +152,7 @@ def acceptConnections():
         print("Error: ", socketerror)
 
 def checkForData(conn):
+    global path
     while True: 
         try:
             data = pickle.loads(conn.recv(2048))
@@ -161,6 +162,7 @@ def checkForData(conn):
 
             if (receivedMsg == "update"):
                 currentFiles = data["attachment"]
+                receiveNewFiles(path, data["attachment"])
                 break
             elif (receivedMsg == "newNode"):
                 break
