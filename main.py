@@ -16,50 +16,53 @@ currentFiles = []
 
 
 def main():
-    # Scans the arp table and finds all connected addresses
-    global HOST, path, currentFiles
-    print(socket.gethostbyname(socket.gethostname()))
-    with os.popen('arp -a') as f:
-        data = f.read()
+    try:
+        # Scans the arp table and finds all connected addresses
+        global HOST, path, currentFiles
+        print(socket.gethostbyname(socket.gethostname()))
+        with os.popen('arp -a') as f:
+            data = f.read()
 
-    addresses = []
+        addresses = []
 
-    print(data)
-    data = data.split('\n')
-    print()
-    for i in range(3, len(data)):
-        line = data[i].split(" ")
-        for x in line:
-            if x and x[0].isdigit():
-                addresses.append(x)
-                break
+        print(data)
+        data = data.split('\n')
+        print()
+        for i in range(3, len(data)):
+            line = data[i].split(" ")
+            for x in line:
+                if x and x[0].isdigit():
+                    addresses.append(x)
+                    break
 
-    print(addresses)
-    
-    
-    serverThread = threading.Thread(target=acceptConnections, args=())
-    serverThread.start()
+        print(addresses)
+        
+        
+        serverThread = threading.Thread(target=acceptConnections, args=())
+        serverThread.start()
 
-    print(path)
-    if not (os.path.exists(path)):
-        os.makedirs(path)
-        print("Making directory at " + path)
+        print(path)
+        if not (os.path.exists(path)):
+            os.makedirs(path)
+            print("Making directory at " + path)
 
-    currentFiles = getCurrentFiles(path)
-    print(currentFiles)
-    # Add Banner 
-    print("-" * 50)
-    print("Scanning started at:" + str(datetime.now()))
-    print("-" * 50)
+        currentFiles = getCurrentFiles(path)
+        print(currentFiles)
+        # Add Banner 
+        print("-" * 50)
+        print("Scanning started at:" + str(datetime.now()))
+        print("-" * 50)
 
-    for i in range(len(addresses)):
-        if (addresses[i] != HOST):
-            thread = threading.Thread(target=checkPort, args=(addresses[i],))
-            thread.start()
+        for i in range(len(addresses)):
+            if (addresses[i] != HOST):
+                thread = threading.Thread(target=checkPort, args=(addresses[i],))
+                thread.start()
 
 
-    clientThread = threading.Thread(target=checkForUpdates())
-    clientThread.start()
+        clientThread = threading.Thread(target=checkForUpdates())
+        clientThread.start()
+    except KeyboardInterrupt as e:
+        sys.exit(0)
     
 
 
@@ -148,6 +151,8 @@ def acceptConnections():
                     continue
     except socket.error as socketerror:
         print("Error: ", socketerror)
+    except KeyboardInterrupt as e:
+        sys.exit(0)
 
 def checkForData(conn):
     print("Data being retrieved...")
@@ -232,7 +237,7 @@ def recursiveGetCurrentFiles(path, fileList):
             recursiveGetCurrentFiles(path + '\\' + dirName, newFileDir)
             fileList.append(newFileDir)
         else:
-            f = open(path + '\\' + dirName, 'r')
+            f = open(path + '\\' + dirName, encoding="ISO-8859-1")
             name = dirName + '\n'
             content = name + f.read()
             fileList.append(content)
