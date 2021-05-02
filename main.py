@@ -10,6 +10,7 @@ PORT = 5102
 HOST = socket.gethostbyname(socket.gethostname())
 path = os.getcwd() + '\\' + HOST
 addresses = []
+currentFiles = []
 
 
 
@@ -69,7 +70,7 @@ def main():
 
 
 def checkPort(address):
-    global PORT, path, addresses
+    global PORT, path, addresses, currentFiles
     target = address
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -88,6 +89,7 @@ def checkPort(address):
                     print("data: " + data["id"])
                     print("data: " + str(data["port"]))
                     receiveNewFiles(path, data["fileData"])
+                    currentFiles = data["fileData"]
                     addresses = data["ips"].append(data["id"])
                 except EOFError:
                     print("Local Data has been received from address: " + target)
@@ -150,7 +152,7 @@ def acceptConnections():
         print("Error: ", socketerror)
 
 def checkForData(conn):
-    while True : 
+    while True: 
         try:
             data = pickle.loads(conn.recv(2048))
             receivedMsg = data["msg"]
@@ -158,6 +160,7 @@ def checkForData(conn):
             messageSender = data["id"]
 
             if (receivedMsg == "update"):
+                currentFiles = data["attachment"]
                 break
             elif (receivedMsg == "newNode"):
                 break
@@ -166,8 +169,27 @@ def checkForData(conn):
         except EOFError:
             print("Exiting!")
             break
+    return
 
 def checkForUpdates():
+    global currentFiles, addresses, path
+    while True:
+        time.sleep(5)
+        updatedFiles = getCurrentFiles(path)
+        if (currentFiles != updatedFiles):
+            currentFiles = updatedFiles
+            for peer in addresses:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                socket.setdefaulttimeout(1)
+
+                s.connect_ex((peer, PORT))
+                sendData = {
+                    "msg": "update",
+                    "attachment": updatedFiles,
+                    "id": HOST
+                }
+                s.send(pickle.dumps(sendData))
+                s.close()
     return
 
 def getCurrentFiles(path):
