@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import threading
 import pickle
+import time
 
 PORT = 5102
 #HOST = socket.gethostbyname(socket.gethostname())
@@ -44,13 +45,6 @@ def main():
         os.makedirs(path)
         print("Making directory at " + path)
 
-    currentFiles = os.listdir(path)
-    print(currentFiles)
-    for dirName in currentFiles:
-        if (os.path.isdir(path + '\\' + dirName)):
-            print('Is Folder')
-        else:
-            print("Isn't folder")
     currentFiles = getCurrentFiles(path)
     print(currentFiles)
     # Add Banner 
@@ -90,7 +84,8 @@ def checkPort(address):
                     print("data: " + str(data["port"]))
                     receiveNewFiles(path, data["fileData"])
                     currentFiles = data["fileData"]
-                    addresses = data["ips"].append(data["id"])
+                    addresses = data["ips"]
+                    addresses.append(data["id"])
                 except EOFError:
                     print("Local Data has been received from address: " + target)
                     break    
@@ -117,8 +112,9 @@ def acceptConnections():
             while True:
                 s.listen(10)
                 conn, (ip, port) = s.accept()
+                print("Receiving new connection...")
                 try:
-                    if (addresses.index(ip)):
+                    if (addresses.index(ip) != -1):
                         newThread = threading.Thread(target=checkForData, args=(conn,))
                         newThread.start()
                 except ValueError:
@@ -155,7 +151,7 @@ def acceptConnections():
 
 def checkForData(conn):
     print("Data being retrieved...")
-    global path
+    global path, currentFiles
     while True: 
         try:
             data = pickle.loads(conn.recv(2048))
@@ -187,9 +183,11 @@ def checkForUpdates():
     while True:
         try:
             time.sleep(5)
+            print("Checking local files...")
             updatedFiles = getCurrentFiles(path)
             if (currentFiles != updatedFiles):
                 currentFiles = updatedFiles
+                print("Sending updated information")
                 for peer in addresses:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     socket.setdefaulttimeout(1)
@@ -202,6 +200,7 @@ def checkForUpdates():
                     }
                     s.send(pickle.dumps(sendData))
                     s.close()
+                print("Sending complete.")
         except KeyboardInterrupt as e:
             print("Sending exit messages...")
             for peer in addresses:
@@ -221,11 +220,8 @@ def checkForUpdates():
     return
 
 def getCurrentFiles(path):
-    print("Finding current files...")
     files = []
     recursiveGetCurrentFiles(path, files)
-    print("Files found:")
-    print(files)
     return files
 
 def recursiveGetCurrentFiles(path, fileList):
