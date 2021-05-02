@@ -135,6 +135,7 @@ def acceptConnections():
                     conn.close()
 
                     for peer in addresses:
+                        print("Updating peers with new node...")
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         socket.setdefaulttimeout(1)
 
@@ -147,11 +148,13 @@ def acceptConnections():
                         s.send(pickle.dumps(sendData))
                         s.close()
                     addresses.append(ip)
+                    print("Updating complete.")
                     continue
     except socket.error as socketerror:
         print("Error: ", socketerror)
 
 def checkForData(conn):
+    print("Data being retrieved...")
     global path
     while True: 
         try:
@@ -159,39 +162,62 @@ def checkForData(conn):
             receivedMsg = data["msg"]
             receivedData = data["attachment"]
             messageSender = data["id"]
+            print("Data message: " + receivedMsg)
 
             if (receivedMsg == "update"):
+                print("Updating files...")
                 currentFiles = data["attachment"]
                 receiveNewFiles(path, data["attachment"])
                 break
             elif (receivedMsg == "newNode"):
+                print("Adding new address...")
+                addresses.append(data["attachment"])
                 break
             elif (receivedMsg == "leaving"):
+                print("Removing node...")
+                addresses.remove(data["id"])
                 break
         except EOFError:
-            print("Exiting!")
+            print("Data retrieval complete.")
             break
     return
 
 def checkForUpdates():
     global currentFiles, addresses, path
     while True:
-        time.sleep(5)
-        updatedFiles = getCurrentFiles(path)
-        if (currentFiles != updatedFiles):
-            currentFiles = updatedFiles
+        try:
+            time.sleep(5)
+            updatedFiles = getCurrentFiles(path)
+            if (currentFiles != updatedFiles):
+                currentFiles = updatedFiles
+                for peer in addresses:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    socket.setdefaulttimeout(1)
+
+                    s.connect_ex((peer, PORT))
+                    sendData = {
+                        "msg": "update",
+                        "attachment": updatedFiles,
+                        "id": HOST
+                    }
+                    s.send(pickle.dumps(sendData))
+                    s.close()
+        except KeyboardInterrupt as e:
+            print("Sending exit messages...")
             for peer in addresses:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 socket.setdefaulttimeout(1)
 
                 s.connect_ex((peer, PORT))
                 sendData = {
-                    "msg": "update",
-                    "attachment": updatedFiles,
+                    "msg": "leaving",
+                    "attachment": HOST,
                     "id": HOST
                 }
                 s.send(pickle.dumps(sendData))
                 s.close()
+            print("Messages sent. Closing.")
+            sys.exit(0)
     return
 
 def getCurrentFiles(path):
