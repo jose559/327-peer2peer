@@ -1,0 +1,11 @@
+Our experiences:
+
+The most complicated part to wrap our heads around in this assignment was the communication over the local network. 
+When we first began, the first thing we attempted to tackle was the arp table and the socket/port setup, 
+however due to a complication with ethernet vs wifi networks how they affect viewable connections on the arp table 
+we weren’t able to actually test whether the connection worked. After some work was done to make sure both 
+local systems were on the same network, we were able to figure out the rest of the connection and its subtleties. 
+While that part was probably the hardest to figure out, we did run into some problems in the file sharing and 
+sending portion. We learned that due to the asynchronous nature of the threads, the timing of the receiving and 
+updating could sometimes create problems. We also ran into some problems with the reading of certain files, 
+and learned that we needed to encode files in certain ways so that we could send them. 
