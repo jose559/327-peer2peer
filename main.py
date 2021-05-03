@@ -266,7 +266,7 @@ def recursiveReceiveNewFiles(path, newFileList):
             f.close()
     return
 
-def disconnect(conn):
-    connections.close()
+# def disconnect(conn):
+#     connections.close()
     
 main()
